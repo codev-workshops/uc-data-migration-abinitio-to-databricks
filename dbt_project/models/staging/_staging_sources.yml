@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: abinitio_raw
+    description: >
+      Raw extracts that the legacy Ab Initio graphs read from flat files.
+      In the Ab Initio estate these were input-file components bound to DML
+      record formats (see ts-python-abinitio-etl/dml/). In Databricks they are
+      Delta tables in Unity Catalog, loaded by seed/generate_and_load.py.
+    database: retail_analytics
+    schema: raw
+    tables:
+      - name: customers
+        description: "Customer master (Ab Initio: customer.dml + customer_address.dml, comma-delimited)"
+      - name: orders
+        description: "Daily order extract (Ab Initio: order extract, pipe-delimited)"
+      - name: transactions
+        description: "Transaction detail (Ab Initio: transaction_detail.dml, pipe-delimited)"

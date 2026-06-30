@@ -1,0 +1,83 @@
+# Databricks Workflow (Asset Bundle resource) — daily orders pipeline.
+#
+# Replaces the Ab Initio KornShell orchestration scheduled by AutoSys/Control-M
+# (ts-python-abinitio-etl/scripts/run_daily_orders.ksh + run_customer_cdc.ksh).
+# Each .ksh phase ("air sandbox run <graph>") becomes a dbt task; the phase
+# dependencies become Workflow task `depends_on` edges.
+resources:
+  jobs:
+    daily_orders_pipeline:
+      name: daily_orders_pipeline
+      description: >
+        Daily orders + customer analytics pipeline. Replaces the Ab Initio
+        AutoSys/Control-M scheduled KornShell jobs. Runs dbt models in dependency
+        order: staging -> intermediate -> marts -> test.
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
+      email_notifications:
+        on_failure:
+          - data-eng-oncall@example.com
+      tasks:
+        - task_key: dbt_staging
+          description: >
+            Load + validate raw extracts into the staging layer. Replaces
+            run_daily_orders.ksh phases 1-3 (extract -> CDC -> staging load).
+          dbt_task:
+            project_directory: dbt_project
+            commands:
+              - dbt deps
+              - dbt run --select tag:staging --target ${bundle.target}
+            warehouse_id: ${var.warehouse_id}
+            catalog: retail_analytics
+            schema: prod
+          timeout_seconds: 3600
+          max_retries: 1
+
+        - task_key: dbt_intermediate
+          description: >
+            Per-customer order metrics (join + rollup graph equivalent).
+          depends_on:
+            - task_key: dbt_staging
+          dbt_task:
+            project_directory: dbt_project
+            commands:
+              - dbt run --select tag:intermediate --target ${bundle.target}
+            warehouse_id: ${var.warehouse_id}
+            catalog: retail_analytics
+            schema: prod
+          timeout_seconds: 3600
+          max_retries: 1
+
+        - task_key: dbt_marts
+          description: >
+            Daily order summary mart. Replaces run_daily_orders.ksh phase 4
+            (production rollover).
+          depends_on:
+            - task_key: dbt_intermediate
+          dbt_task:
+            project_directory: dbt_project
+            commands:
+              - dbt run --select tag:marts --target ${bundle.target}
+            warehouse_id: ${var.warehouse_id}
+            catalog: retail_analytics
+            schema: prod
+          timeout_seconds: 3600
+          max_retries: 1
+
+        - task_key: dbt_test
+          description: >
+            Run schema + reconciliation tests (reconcile_*.sql). A failing
+            reconciliation control fails the run, gating production.
+          depends_on:
+            - task_key: dbt_marts
+          dbt_task:
+            project_directory: dbt_project
+            commands:
+              - dbt test --target ${bundle.target}
+            warehouse_id: ${var.warehouse_id}
+            catalog: retail_analytics
+            schema: prod
+          timeout_seconds: 3600
+          max_retries: 0

@@ -1,0 +1,64 @@
+# dbt CI Pipeline for Ab Initio -> dbt/Databricks Migration
+#
+# Migration Context:
+#   In the Ab Initio world there was no CI/CD pipeline. Graphs were edited in the
+#   GDE, checked into EME, and promoted via sandbox/checkout — typically with no
+#   automated testing. This GitHub Actions pipeline is the "after" state: every
+#   change goes through automated validation before it reaches production.
+
+name: dbt CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dbt_project/**'
+      - 'verify/**'
+      - '.sqlfluff'
+      - 'requirements.txt'
+      - '.github/workflows/dbt_ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'dbt_project/**'
+      - 'verify/**'
+      - '.sqlfluff'
+      - 'requirements.txt'
+      - '.github/workflows/dbt_ci.yml'
+
+env:
+  DBT_PROFILES_DIR: ${{ github.workspace }}/dbt_project
+  # Placeholder credentials for parse steps — no live connection is made. The
+  # dbt-databricks adapter requires these env vars to be set even when parsing.
+  DATABRICKS_HOST: ci-placeholder.databricks.net
+  DATABRICKS_HTTP_PATH: /sql/1.0/warehouses/ci_placeholder
+  DATABRICKS_TOKEN: dapi_ci_placeholder
+
+jobs:
+  lint:
+    name: sqlfluff lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install sqlfluff
+        run: pip install -r requirements.txt
+      - name: Run sqlfluff lint
+        run: sqlfluff lint dbt_project/models/ --config .sqlfluff --ignore templating,parsing
+
+  validate:
+    name: dbt parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: dbt parse
+        run: cd dbt_project && dbt parse --target dev

@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: int_customer_orders
+    description: >
+      Per-customer order metrics joining stg_customers to stg_orders.
+      Migrated from the Ab Initio join + rollup graph.
+    columns:
+      - name: customer_id
+        description: Primary key — one row per customer with orders.
+        data_tests:
+          - unique
+          - not_null
+      - name: order_count
+        description: Number of orders for the customer (>= 1, inner join).
+        data_tests:
+          - not_null
+      - name: total_amount
+        description: Sum of order amounts for the customer.
+        data_tests:
+          - not_null

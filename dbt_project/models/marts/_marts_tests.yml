@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: mart_daily_orders
+    description: >
+      Daily order summary. Migrated from the Ab Initio production rollover graph
+      (run_daily_orders.ksh phase 4).
+    columns:
+      - name: order_date
+        description: Reporting date — one row per day.
+        data_tests:
+          - unique
+          - not_null
+      - name: order_count
+        description: Orders placed on the date.
+        data_tests:
+          - not_null
+      - name: total_amount
+        description: Total order amount for the date.
+        data_tests:
+          - not_null
