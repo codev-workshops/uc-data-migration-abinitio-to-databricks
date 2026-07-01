@@ -1,0 +1,37 @@
+# dbt Schema Tests — Curated Layer
+#
+# The curated layer applies the Ab Initio DML record defaults before load.
+# These tests assert the curated transaction domain, including the channel
+# default (blank -> 'UNKNOWN') declared in transaction_detail.dml.
+
+version: 2
+
+models:
+  - name: curated_transactions
+    description: >
+      Curated transactions from the Ab Initio transaction detail graph
+      (transaction_detail.dml), with the DML null(...) defaults reproduced
+      value-for-value (channel -> 'UNKNOWN', merchant_name -> '').
+    columns:
+      - name: txn_id
+        description: Primary key — unique transaction identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to stg_customers.
+        data_tests:
+          - not_null
+      - name: channel
+        description: >
+          Sales channel with the DML null("UNKNOWN") default applied — a blank
+          source channel becomes the literal 'UNKNOWN', never NULL. The
+          accepted-values set is the source domain plus that default.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [WEB, STORE, APP, UNKNOWN]
+      - name: amount
+        description: Transaction amount (Ab Initio merchant_info.amount).
+        data_tests:
+          - not_null

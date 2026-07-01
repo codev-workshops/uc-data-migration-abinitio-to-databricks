@@ -36,6 +36,10 @@ models:
       +schema: marts
       +materialized: table
       +tags: ['marts']
+    curated:
+      +schema: curated
+      +materialized: table
+      +tags: ['curated']
 
 seeds:
   abinitio_to_databricks_migration:

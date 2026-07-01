@@ -49,3 +49,31 @@ models:
         description: Order total amount.
         data_tests:
           - not_null
+
+  - name: stg_transactions
+    description: >
+      Transaction detail from the Ab Initio transaction detail graph
+      (transaction_detail.dml). Faithful typed pass-through — DML null(...)
+      defaults are applied downstream in curated_transactions.
+    columns:
+      - name: txn_id
+        description: Primary key — unique transaction identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to stg_customers.
+        data_tests:
+          - not_null
+      - name: txn_type
+        description: >
+          Transaction type code (1 = sale, 2 = refund). Faithful pass-through of
+          the source domain.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2]
+      - name: amount
+        description: Transaction amount (Ab Initio merchant_info.amount).
+        data_tests:
+          - not_null

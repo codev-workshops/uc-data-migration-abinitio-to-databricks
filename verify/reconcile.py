@@ -121,6 +121,45 @@ class Reconciler:
             {"expected": str(src), "actual": str(mart)},
         ))
 
+    def check_transactions_completeness(self):
+        """Live-converted control: curated transactions must equal the source
+        transaction population (no silent row loss, no fan-out from the DML
+        line_items array). SKIPs until the transactions pipeline is converted."""
+        if not self._table_exists(f"{self.curated}.curated_transactions"):
+            self.results.append(CheckResult(
+                "transactions_completeness", "SKIP",
+                "curated_transactions not produced yet (live conversion target)"))
+            return
+        expected = self._scalar(f"select count(*) from {self.raw}.transactions")
+        actual = self._scalar(
+            f"select count(*) from {self.curated}.curated_transactions")
+        ok = expected == actual
+        self.results.append(CheckResult(
+            "transactions_completeness", "PASS" if ok else "FAIL",
+            f"raw transactions = {expected}, curated transactions = {actual}",
+            {"expected": expected, "actual": actual},
+        ))
+
+    def check_transactions_control_total(self):
+        """Live-converted control: total transaction amount in the curated table
+        must tie out to the raw extract, to the cent. SKIPs until the
+        transactions pipeline is converted."""
+        if not self._table_exists(f"{self.curated}.curated_transactions"):
+            self.results.append(CheckResult(
+                "transactions_control_total", "SKIP",
+                "curated_transactions not produced yet (live conversion target)"))
+            return
+        src = self._scalar(
+            f"select sum(cast(amount as decimal(12,2))) from {self.raw}.transactions")
+        curated = self._scalar(
+            f"select sum(amount) from {self.curated}.curated_transactions")
+        ok = src == curated
+        self.results.append(CheckResult(
+            "transactions_control_total", "PASS" if ok else "FAIL",
+            f"raw SUM(amount) = {src}, curated SUM(amount) = {curated}",
+            {"expected": str(src), "actual": str(curated)},
+        ))
+
     def check_transactions_channel_parity(self):
         """Live-converted control: the curated transactions table must apply the
         DML default channel = null("UNKNOWN") — a blank source channel becomes the
@@ -148,6 +187,8 @@ class Reconciler:
         self.check_customers_completeness()
         self.check_orders_completeness()
         self.check_orders_control_total()
+        self.check_transactions_completeness()
+        self.check_transactions_control_total()
         self.check_transactions_channel_parity()
         self.con.close()
         return all(r.status != "FAIL" for r in self.results)

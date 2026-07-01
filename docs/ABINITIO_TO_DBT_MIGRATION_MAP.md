@@ -58,7 +58,7 @@ staging models.
 | Daily orders extract→staging (`run_daily_orders.ksh` ph.1-3) | `stg_orders` | on `main` | typed read + date parse |
 | Customer/order join + rollup | `int_customer_orders` | on `main` | join + `group by` |
 | Orders production rollover (`run_daily_orders.ksh` ph.4) | `mart_daily_orders` | on `main` | rollup → mart |
-| Transactions detail (`transaction_detail.dml`) | `stg_transactions` → `curated_transactions` | **live conversion** | flatten + DML `null("UNKNOWN")` default |
+| Transactions detail (`transaction_detail.dml`) | `stg_transactions` → `curated_transactions` | converted | typed staging + DML `null("UNKNOWN")` channel default |
 | Customer CDC (`cdc_processor.py`, `customer_cdc.pset`) | `snapshots/` + `MERGE` | **live conversion** | compare-by-key + row hash |
 
 "Live conversion" rows are the work Devin does during the demo via

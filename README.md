@@ -61,10 +61,15 @@ controls between the raw source and the converted marts:
 | Control | Where | Proves |
 |---|---|---|
 | `reconcile_orders_control_total` | dbt singular test | mart `SUM(total_amount)` ties out to source `SUM(amount)` |
+| `reconcile_transactions_completeness` | dbt singular test | curated transactions row count = raw transactions (no loss/fan-out) |
+| `reconcile_transactions_control_total` | dbt singular test | curated `SUM(amount)` ties out to source `SUM(amount)` |
+| `reconcile_transactions_channel_parity` | dbt singular test | per-transaction channel matches the DML `null("UNKNOWN")` default from source |
 | `customers_completeness` | `verify/reconcile.py` | staging customers = raw customers |
 | `orders_completeness` | `verify/reconcile.py` | staging orders = raw orders |
 | `orders_control_total` | `verify/reconcile.py` | mart total ties out to raw |
-| `transactions_channel_parity` | `verify/reconcile.py` | curated channel applies the DML `null("UNKNOWN")` default (live-conversion target) |
+| `transactions_completeness` | `verify/reconcile.py` | curated transactions = raw transactions |
+| `transactions_control_total` | `verify/reconcile.py` | curated transaction total ties out to raw |
+| `transactions_channel_parity` | `verify/reconcile.py` | curated channel applies the DML `null("UNKNOWN")` default |
 
 dbt `build` fails if any `reconcile_*.sql` returns rows; `verify/reconcile.py`
 exits non-zero on any FAIL, so both gate CI and pre-merge.
