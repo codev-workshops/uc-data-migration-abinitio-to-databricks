@@ -1,0 +1,42 @@
+name: abinitio_to_databricks_migration
+version: '1.0.0'
+config-version: 2
+
+profile: 'databricks'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  # Ab Initio PSET parameter equivalents (see ts-python-abinitio-etl/psets/)
+  environment: "{{ env_var('DBT_ENVIRONMENT', 'dev') }}"
+  curr_dt: "{{ run_started_at.strftime('%Y-%m-%d') }}"
+  record_source: "ORDER_SYSTEM"
+
+models:
+  abinitio_to_databricks_migration:
+    staging:
+      +schema: staging
+      +materialized: view
+      +tags: ['staging']
+    intermediate:
+      +schema: intermediate
+      +materialized: table
+      +tags: ['intermediate']
+    marts:
+      +schema: marts
+      +materialized: table
+      +tags: ['marts']
+
+seeds:
+  abinitio_to_databricks_migration:
+    +schema: seeds

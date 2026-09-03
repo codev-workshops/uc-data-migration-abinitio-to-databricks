@@ -1,0 +1,30 @@
+# Databricks Asset Bundle — Ab Initio -> Databricks migration.
+#
+# Replaces the Ab Initio AutoSys/Control-M schedule + KornShell wrappers
+# (ts-python-abinitio-etl/scripts/*.ksh) with a version-controlled, deployable
+# job that runs the dbt pipeline in dependency order. `make deploy` /
+# `make run-job` / `make destroy` wrap the `databricks bundle` commands.
+bundle:
+  name: abinitio_to_databricks_migration
+
+variables:
+  warehouse_id:
+    description: SQL warehouse id used by the dbt tasks.
+    default: ""
+
+include:
+  - workflows/daily_orders_pipeline.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: ${DATABRICKS_HOST}
+    # In development mode the deployed job/schedule is paused and namespaced
+    # per-user, so deploying never disturbs a shared schedule.
+
+  prod:
+    mode: production
+    workspace:
+      host: ${DATABRICKS_HOST}

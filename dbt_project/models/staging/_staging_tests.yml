@@ -1,0 +1,51 @@
+# dbt Schema Tests — Staging Layer
+#
+# Ab Initio had no built-in data-quality framework — validation was done with
+# reject ports, dedup components, and manual record-count checks in the
+# KornShell wrappers. dbt makes data quality declarative, version-controlled,
+# and enforced on every run.
+
+version: 2
+
+models:
+  - name: stg_customers
+    description: >
+      Customer master from the Ab Initio customer snapshot graph
+      (customer.dml + customer_address.dml).
+    columns:
+      - name: customer_id
+        description: Primary key — unique customer identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: status
+        description: >
+          Customer status. Faithful pass-through of the source domain.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [ACTIVE, INACTIVE, PENDING]
+
+  - name: stg_orders
+    description: >
+      Daily order extract from the Ab Initio orders pipeline.
+    columns:
+      - name: order_id
+        description: Primary key — unique order identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to stg_customers.
+        data_tests:
+          - not_null
+      - name: order_status
+        description: Order status code.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [SHIPPED, DELIVERED, PROCESSING, CANCELLED]
+      - name: amount
+        description: Order total amount.
+        data_tests:
+          - not_null

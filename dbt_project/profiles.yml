@@ -1,0 +1,24 @@
+# Databricks connection profile
+# In production, use environment variables for credentials.
+databricks:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      catalog: retail_analytics
+      # Namespace prefix for outputs. Override per run/attendee for isolated,
+      # concurrent demo spaces, e.g. DBT_SCHEMA=alice -> alice_staging/_marts/...
+      schema: "{{ env_var('DBT_SCHEMA', 'dev') }}"
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      threads: 4
+
+    prod:
+      type: databricks
+      catalog: retail_analytics
+      schema: prod
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      threads: 8
